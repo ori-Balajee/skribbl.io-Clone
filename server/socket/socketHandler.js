@@ -15,7 +15,8 @@ function socketHandler(io) {
                 id: socket.id,
                 playerName: hostName,
                 isHost: true,
-                score: 0
+                score: 0,
+                hasGuessedCorrectly: false
             };
 
             rooms[roomId] = {
@@ -67,7 +68,8 @@ function socketHandler(io) {
                 id: socket.id,
                 playerName: playerName,
                 isHost: false,
-                score: 0
+                score: 0,
+                hasGuessedCorrectly: false
             };
 
             // Add to the room's list of players
@@ -102,6 +104,12 @@ function socketHandler(io) {
                         players: room.players
                     });
 
+                    const totalGuessers = room.players.filter(p => p.id !== room.currentDrawerIdSaved).length;
+                    const completedGuesses = room.players.filter(p => p.hasGuessedCorrectly).length;
+                    if (totalGuessers > 0 && completedGuesses >= totalGuessers) {
+                        endTurn(io, roomId, "Everyone guessed it!");
+                    }
+
                     if (room.players.length === 0) {
                         delete rooms[roomId];
                     }
@@ -125,6 +133,8 @@ function socketHandler(io) {
                 socket.emit("error_message", "Only the host can start the game.");
                 return;
             }
+
+            room.players.forEach(p => p.hasGuessedCorrectly = false);
 
             io.to(targetRoomId).emit("game_started", { players: room.players });
 
@@ -166,6 +176,53 @@ function socketHandler(io) {
             socket.to(targetRoomId).emit("clear_canvas");
             console.log("clear the board")
         });
+
+        socket.on("send_message", ({ roomId, text }) => {
+            const targetRoomId = roomId?.toUpperCase();
+            const room = rooms[targetRoomId];
+            if (!room) return;
+
+            const senderPlayer = room.players.find(p => p.id === socket.id);
+            if (!senderPlayer) return;
+
+            const cleanInput = text.trim().toLowerCase();
+            const cleanSecretWord = room.currentWord?.trim().toLowerCase();
+
+            if (cleanSecretWord && cleanInput === cleanSecretWord && senderPlayer.id !== room.currentDrawerIdSaved) {
+
+                if (!senderPlayer.hasGuessedCorrectly) {
+                    senderPlayer.hasGuessedCorrectly = true;
+
+                    senderPlayer.score += 100;
+
+                    io.to(targetRoomId).emit("receive_message", {
+                        id: Math.random().toString(36).substring(2, 9),
+                        sender: "System",
+                        text: `${senderPlayer.playerName} guessed the word! 🎉`,
+                        system: true,
+                        correctGuess: true
+                    });
+
+                    io.to(targetRoomId).emit("player_joined", { players: room.players });
+
+                    const totalGuessers = room.players.filter(p => p.id !== room.currentDrawerIdSaved).length;
+                    const completedGuesses = room.players.filter(p => p.hasGuessedCorrectly).length;
+
+                    if (completedGuesses >= totalGuessers && totalGuessers > 0) {
+                        endTurn(io, targetRoomId, "Everyone guessed the word! 🎉");
+                    }
+                }
+
+            } else {
+                io.to(targetRoomId).emit("receive_message", {
+                    id: Math.random().toString(36).substring(2, 9),
+                    sender: senderPlayer.playerName,
+                    text: text,
+                    system: false,
+                    correctGuess: false
+                });
+            }
+        });
     });
 }
 
@@ -181,6 +238,7 @@ function startNewTurn(io, roomId) {
     room.currentDrawerIdSaved = currentDrawer.id;
 
     room.players.forEach((player) => {
+        player.hasGuessedCorrectly = false;
         const isCurrentDrawer = player.id === currentDrawer.id;
 
         io.to(player.id).emit("round_start", {

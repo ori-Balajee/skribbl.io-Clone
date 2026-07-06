@@ -93,7 +93,7 @@ function Game() {
     return () => {
       socket.off("game_started");
       socket.off("round_start");
-      socket.off("round_start_drawing")
+      socket.off("round_start_drawing");
       socket.off("timer_tick");
       socket.off("round_end");
       socket.off("game_over");
@@ -107,9 +107,10 @@ function Game() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col p-6 font-sans select-none">
+    <div className="min-h-screen bg-slate-900 text-white flex flex-col p-6 font-sans select-none relative">
 
-      <div className="w-full max-w-5xl mx-auto bg-slate-800 border border-slate-700 p-5 rounded-xl flex justify-between items-center mb-6 shadow-md">
+      {/* HEADER HUD */}
+      <div className="w-full max-w-6xl mx-auto bg-slate-800 border border-slate-700 p-5 rounded-xl flex justify-between items-center mb-6 shadow-md">
         <div>
           <h2 className="text-xl font-bold tracking-wide text-indigo-400">Room: {roomId?.toUpperCase()}</h2>
           <h3 className="text-sm text-slate-300 mt-1">Round {currentRound}</h3>
@@ -123,31 +124,38 @@ function Game() {
         </div>
       </div>
 
-      <div className="w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 items-start grow">
+      {/* THREE-COLUMN ASYMMETRIC GRID LAYER */}
+      <div className={`w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-[210px_1fr_300px] gap-4 items-start grow transition-all duration-300 ${gamePhase === "over" ? "blur-md pointer-events-none brightness-50" : ""
+        }`}>
 
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 flex flex-col justify-between shadow-md h-96">
+        {/* COLUMN 1: PLAYERS (COMPACT FOOTPRINT) */}
+        <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 flex flex-col justify-between shadow-md h-96">
           <div>
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-700 pb-2 mb-3">Players & Scores</h3>
-            <div className="flex flex-col gap-2 overflow-y-auto max-h-64">
+            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-700 pb-1.5 mb-2">
+              Players
+            </h3>
+            <div className="flex flex-col gap-1.5 overflow-y-auto max-h-[20rem]">
               {players.map((p) => (
                 <div
                   key={p.id}
-                  className={`flex justify-between items-center p-3 rounded-lg text-sm font-medium border ${p.id === currentDrawerId
+                  className={`flex flex-col p-2 rounded-lg border text-xm ${p.id === currentDrawerId
                     ? "bg-amber-950/40 border-amber-500/50 text-amber-200"
                     : "bg-slate-900/60 border-slate-700/40 text-slate-300"
                     }`}
                 >
-                  <span className="truncate flex items-center gap-1.5">
-                    {p.playerName} {p.id === currentDrawerId && "🎨"}
+                  <span className="truncate font-semibold flex items-center gap-1">
+                    {p.id === currentDrawerId && "🎨"} {p.playerName}
                   </span>
-                  <strong className="text-emerald-400 font-mono">{p.score || 0} pts</strong>
+                  <span className="text-emerald-400 font-mono text-[10px] mt-0.5">{p.score || 0} pts</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="md:col-span-2 bg-slate-950 rounded-xl p-8 min-h-[24rem] flex flex-col items-center justify-center border-2 border-slate-800 relative shadow-inner">
+        {/* COLUMN 2: ORIGINAL LARGE CANVAS WORKSPACE */}
+        {/* NEW UPDATED LINE: */}
+        <div className="bg-slate-950 rounded-xl p-6 md:min-h-[24rem] h-full flex flex-col items-center justify-center border-2 border-slate-800 relative shadow-inner overflow-hidden">
 
           {gamePhase === "waiting" && (
             <div className="text-center">
@@ -186,7 +194,7 @@ function Game() {
               <p className="text-xs font-bold tracking-widest text-slate-500 uppercase mb-2">
                 {amIDrawer ? "🎨 YOU ARE INTERPRETING" : `👀 VIEWING ${currentDrawerName.toUpperCase()}'S COMPOSITION`}
               </p>
-              <h1 className="tracking-[0.5em] font-mono text-4xl md:text-5xl font-black text-sky-400 my-4 select-text">
+              <h1 className="tracking-[0.4em] font-mono text-xl md:text-2xl font-black text-sky-400 my-2 select-text">
                 {displayWord ? displayWord.toUpperCase() : ""}
               </h1>
 
@@ -204,8 +212,13 @@ function Game() {
           )}
 
         </div>
+
+        {/* COLUMN 3: CHAT BLOCK */}
+        <Chat roomId={roomId} amIDrawer={amIDrawer} />
+
       </div>
 
+      {/* FLOATING END GAME MODAL OVERLAY */}
       {gamePhase === "over" && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-6 max-w-md w-full transform scale-100 transition-transform duration-300">
