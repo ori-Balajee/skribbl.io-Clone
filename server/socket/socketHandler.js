@@ -303,6 +303,9 @@ function endTurn(io, roomId) {
         nextDrawer: nextDrawer ? nextDrawer.playerName : null
     });
 
+    room.currentWord = ""; 
+    room.wordOptionsSaved = [];
+
     room.drawerIndex = nextDrawerIndex;
     room.currentRound = nextRound;
 

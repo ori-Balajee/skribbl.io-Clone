@@ -1,9 +1,11 @@
 const words = [
     "Elephant",
-    "Mountain",
+    "comb",
     "Pizza",
     "Laptop",
     "Rocket",
+    "Rubik's Cube",
+    "Walkie-talkie",
     "Dragon",
     "Football",
     "Guitar",
